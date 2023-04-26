@@ -52,8 +52,7 @@ class Auth:
         The create_access_token function creates a new access token.
             Args:
                 data (dict): A dictionary containing the claims to be encoded in the JWT.
-                expires_delta (Optional[float]): An optional parameter specifying how long, in seconds,
-                    the access token should last before expiring. If not specified, it defaults to 15 minutes.
+                expires_delta (Optional[float]): An optional parameter specifying how long, in seconds, the access token should last before expiring. If not specified, it defaults to 15 minutes.
 
         :param self: Represent the instance of the class
         :param data: dict: Pass in the data that will be encoded into the jwt
