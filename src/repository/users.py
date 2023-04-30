@@ -53,6 +53,7 @@ async def update_token(user: User, refresh_token, db: Session):
     """
     user.refresh_token = refresh_token
     db.commit()
+    return user
 
 
 async def confirmed_email(email: str, db: Session) -> None:
@@ -69,6 +70,7 @@ async def confirmed_email(email: str, db: Session) -> None:
     user = await get_user_by_email(email, db)
     user.confirmed = True
     db.commit()
+    return user
 
 
 async def update_avatar(email, url: str, db: Session) -> User:
@@ -101,6 +103,7 @@ async def update_password(user: User, new_password: str, db: Session) -> None:
     """
     user.password = new_password
     db.commit()
+    return user
 
 
 async def update_reset_token(user: User, reset_token, db: Session) -> None:
@@ -115,3 +118,4 @@ async def update_reset_token(user: User, reset_token, db: Session) -> None:
     """
     user.password_reset_token = reset_token
     db.commit()
+    return user

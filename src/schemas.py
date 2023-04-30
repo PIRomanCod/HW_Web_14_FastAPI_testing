@@ -42,11 +42,11 @@ class UserModel(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: int
-    username: str
-    email: str
-    avatar: str
-    roles: Role
+    id: int = 1
+    username: str = 'Unknown'
+    email: str = 'unknown@example.com'
+    avatar: str = 'Unknown'
+    roles: Role = "user"
     created_at: datetime.datetime | None
     updated_at: datetime.datetime | None
 

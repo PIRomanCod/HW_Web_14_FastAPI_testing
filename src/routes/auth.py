@@ -7,8 +7,10 @@ from src.repository import users as repository_users
 from src.schemas import UserModel, UserResponse, TokenModel, RequestEmail, ResetPassword
 from src.services.auth import auth_service, auth_password
 from src.services.email import send_email
+from src.conf import messages
 
-router = APIRouter(prefix="/api/auth", tags=['auth'])
+
+router = APIRouter(prefix="/api/auth", tags=["auth"])
 security = HTTPBearer()
 
 
@@ -29,13 +31,13 @@ async def signup(body: UserModel, background_tasks: BackgroundTasks, request: Re
     """
     exist_user = await repository_users.get_user_by_email(body.email, db)
     if exist_user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=messages.ACCOUNT_EXIST)
     body.password = auth_service.get_password_hash(body.password)
     new_user = await repository_users.create_user(body, db)
     background_tasks.add_task(send_email, new_user.email, new_user.username, request.base_url,
                               payload={"subject": "Confirm your email", "template_name": "email_template.html"})
 
-    return {"message": "Email confirmed"}, new_user
+    return {"user": new_user, "message": messages.CHECK_EMAIL}
 
 
 @router.post("/login", response_model=TokenModel)
@@ -52,11 +54,11 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: Session = Depen
     """
     user = await repository_users.get_user_by_email(body.username, db)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=messages.INVALID_EMAIL)
     if not user.confirmed:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email not confirmed")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=messages.EMAIL_NOT_CONFIRMED)
     if not auth_service.verify_password(body.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=messages.INVALID_PASSWORD)
     # Generate JWT
     access_token = await auth_service.create_access_token(data={"sub": user.email})
     refresh_token = await auth_service.create_refresh_token(data={"sub": user.email})
@@ -81,7 +83,7 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Security(sec
     user = await repository_users.get_user_by_email(email, db)
     if user.refresh_token != token:
         await repository_users.update_token(user, None, db)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=messages.INVALID_REFRESH_TOKEN)
 
     access_token = await auth_service.create_access_token(data={"sub": email})
     refresh_token = await auth_service.create_refresh_token(data={"sub": email})
@@ -89,7 +91,7 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Security(sec
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 
-@router.get('/confirmed_email/{token}')
+@router.get("/confirmed_email/{token}")
 async def confirmed_email(token: str, db: Session = Depends(get_db)):
     """
     The confirmed_email function is used to confirm a user's email address.
@@ -107,14 +109,14 @@ async def confirmed_email(token: str, db: Session = Depends(get_db)):
     email = auth_service.get_email_from_token(token)
     user = await repository_users.get_user_by_email(email, db)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verification error")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.VERIFICATION_ERROR)
     if user.confirmed:
-        return {"message": "Your email is already confirmed"}
+        return {"message": messages.EMAIL_ALREADY_CONFIRMED}
     await repository_users.confirmed_email(email, db)
-    return {"message": "Email confirmed"}
+    return {"message": messages.EMAIL_CONFIRMED}
 
 
-@router.post('/request_email')
+@router.post("/request_email")
 async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, request: Request,
                         db: Session = Depends(get_db)):
     """
@@ -133,13 +135,13 @@ async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, r
     user = await repository_users.get_user_by_email(body.email, db)
     if user:
         if user.confirmed:
-            return {"message": "Your email is already confirmed"}
+            return {"message": messages.EMAIL_ALREADY_CONFIRMED}
         background_tasks.add_task(send_email, user.email, user.username, request.base_url,
                                   payload={"subject": "Confirm your email", "template_name": "email_template.html"})
-    return {"message": "Check your email for confirmation."}
+    return {"message": messages.CHECK_EMAIL}
 
 
-@router.post('/reset_password')
+@router.post("/reset_password")
 async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, request: Request,
                         db: Session = Depends(get_db)):
     """
@@ -159,11 +161,11 @@ async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, r
     if user:
         background_tasks.add_task(send_email, user.email, user.username, request.base_url,
                                   payload={"subject": "Confirmation", "template_name": "reset_password.html"})
-        return {"message": "Check your email for the next step."}
-    return {"message": "Your email is incorrect"}
+        return {"message": messages.CHECK_EMAIL_NEXT_STEP}
+    return {"message": messages.INVALID_EMAIL}
 
 
-@router.get('/password_reset_confirm/{token}')
+@router.get("/password_reset_confirm/{token}")
 async def password_reset_confirm(token: str, db: Session = Depends(get_db)):
     """
     The password_reset_confirm function is used to reset a user's password.
@@ -179,10 +181,10 @@ async def password_reset_confirm(token: str, db: Session = Depends(get_db)):
     user = await repository_users.get_user_by_email(email, db)
     reset_password_token = auth_service.create_email_token(data={"sub": user.email})
     await repository_users.update_reset_token(user, reset_password_token, db)
-    return {'reset_password_token': reset_password_token}
+    return {"reset_password_token": reset_password_token}
 
 
-@router.post('/set_new_password')
+@router.post("/set_new_password")
 async def update_password(request: ResetPassword, db: Session = Depends(get_db)):
     """
     The update_password function takes a ResetPassword object and updates the user's password.
@@ -199,14 +201,14 @@ async def update_password(request: ResetPassword, db: Session = Depends(get_db))
     email = auth_service.get_email_from_token(token)
     user = await repository_users.get_user_by_email(email, db)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verification error")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.VERIFICATION_ERROR)
     check_token = user.password_reset_token
     if check_token != token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid reset token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=messages.INVALID_RESET_TOKEN)
     if request.new_password != request.confirm_password:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="passwords do not match")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=messages.INVALID_PASSWORD)
 
     new_password = auth_password.get_hash_password(request.new_password)
     await repository_users.update_password(user, new_password, db)
     await repository_users.update_reset_token(user, None, db)
-    return {"message": "Password successfully updated"}
+    return {"message": messages.PASSWORD_UPDATED}

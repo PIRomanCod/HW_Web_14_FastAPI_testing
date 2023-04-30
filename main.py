@@ -1,3 +1,4 @@
+import pathlib
 import time
 
 import redis.asyncio as redis
@@ -56,7 +57,9 @@ async def errors_handling(request: Request, call_next):
 
 
 templates = Jinja2Templates(directory='templates')
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+BASE_DIR = pathlib.Path(__file__).parent
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 
 @app.get("/", response_class=HTMLResponse, description="Main Page")
@@ -116,6 +119,6 @@ async def startup():
                           decode_responses=True)
     await FastAPILimiter.init(r)
 
-
-if __name__ == '__main__':
-    uvicorn.run('main:app', reload=True)
+#
+# if __name__ == '__main__':
+#     uvicorn.run('main:app', reload=True)

@@ -1,4 +1,16 @@
-# HW_Web_13 (First part - FastAPI) User's email verification + Redis cash
+# HW_Web_14 FastAPI Sphinx documentation + Testing(Unittest - module, PyTest - func)
+
+# Implemented required tasks:
+- Create documentation for your homework with Sphinx. 
+     added docstrings to the necessary functions and class methods in the main modules by Trelent.
+- Unit test the modules of the homework repository using the Unittest framework. 
+- Functionally test any route of your choice from your homework using the pytest framework.
+
+# Implemented additional task:
+- Cover your homework with tests more than 95%. For control, use the pytest-cov package
+
+
+# HW_Web_13 (First part - FastAPI) User's email verification + Redis cash + password reset 
 In this homework, we continue to refine the REST API application from homework 12.
 
 # Implemented required tasks:
@@ -107,3 +119,5 @@ The API build using the FastAPI infrastructure and use SQLAlchemy for database m
 - alembic upgrade head -> implementation to DB 
 - docker-compose up -> up REdis+Postgress
 - docker-compose down -> shut REdis+Postgress
+- pytest --cov=. --cov-report html tests/ - create coverage report in html format
+

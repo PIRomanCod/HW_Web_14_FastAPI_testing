@@ -94,33 +94,42 @@ async def get_birthday_list(user: User, shift: int, db: Session) -> List[Contact
             contacts.append(contact)
     return contacts
 
+#
+# async def get_users_by_partial_info(user: User, partial_info: str, db: Session) -> List[Contact]:
+#     """
+#     The get_users_by_partial_info function takes in a user and partial_info,
+#         then returns a list of contacts that match the partial_info.
+#
+#     :param user: User: Identify the user who is making the request
+#     :param partial_info: str: Search for a user by their first name, last name, email or phone number
+#     :param db: Session: Pass the database session to the function
+#     :return: A list of contacts
+#     :doc-author: Trelent
+#     """
+#     contacts = []
+#     search_by_firstname = await get_contact_by_firstname(user, partial_info, db)
+#     if search_by_firstname:
+#         for item in search_by_firstname:
+#             contacts.append(item)
+#     search_by_second_name = await get_contact_by_lastname(user, partial_info, db)
+#     if search_by_second_name:
+#         for item in search_by_second_name:
+#             contacts.append(item)
+#     search_by_email = await get_contact_by_email(user, partial_info, db)
+#     if search_by_email:
+#         for item in search_by_email:
+#             contacts.append(item)
+#     search_by_phone = await get_contact_by_phone(user, partial_info, db)
+#     if search_by_phone:
+#         for item in search_by_phone:
+#             contacts.append(item)
+#     return contacts
 
 async def get_users_by_partial_info(user: User, partial_info: str, db: Session) -> List[Contact]:
-    """
-    The get_users_by_partial_info function takes in a user and partial_info,
-        then returns a list of contacts that match the partial_info.
-
-    :param user: User: Identify the user who is making the request
-    :param partial_info: str: Search for a user by their first name, last name, email or phone number
-    :param db: Session: Pass the database session to the function
-    :return: A list of contacts
-    :doc-author: Trelent
-    """
-    contacts = []
-    search_by_firstname = await get_contact_by_firstname(user, partial_info, db)
-    if search_by_firstname:
-        for item in search_by_firstname:
-            contacts.append(item)
-    search_by_second_name = await get_contact_by_lastname(user, partial_info, db)
-    if search_by_second_name:
-        for item in search_by_second_name:
-            contacts.append(item)
-    search_by_email = await get_contact_by_email(user, partial_info, db)
-    if search_by_email:
-        for item in search_by_email:
-            contacts.append(item)
-    search_by_phone = await get_contact_by_phone(user, partial_info, db)
-    if search_by_phone:
-        for item in search_by_phone:
-            contacts.append(item)
-    return contacts
+    contacts = db.query(Contact).filter(Contact.user_id == user.id).all()
+    filtered_contacts = [contact for contact in contacts if
+                         partial_info in contact.firstname or
+                         partial_info in contact.lastname or
+                         partial_info in contact.email or
+                         partial_info in contact.phone]
+    return filtered_contacts
